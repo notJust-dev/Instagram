@@ -19,6 +19,7 @@ import PostContent from './PostContent';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
+import { sendLikeNotification } from '../utils/notifications';
 
 export default function PostListItem({ post }) {
   const [isLiked, setIsLiked] = useState(false);
@@ -62,6 +63,9 @@ export default function PostListItem({ post }) {
       .from('likes')
       .insert([{ user_id: user?.id, post_id: post.id }])
       .select();
+
+    // send notification to the owner of that post
+    sendLikeNotification(data[0]);
 
     setLikeRecord(data[0]);
   };
