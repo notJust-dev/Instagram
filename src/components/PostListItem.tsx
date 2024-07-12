@@ -114,7 +114,9 @@ export default function PostListItem({ post }) {
       </View>
 
       <View className="px-3 gap-1">
-        <Text className="font-semibold">58 likes</Text>
+        <Text className="font-semibold">
+          {post.likes?.[0]?.count || 0} likes
+        </Text>
         <Text>
           <Text className="font-semibold">
             {post.user.username || 'New user'}{' '}
