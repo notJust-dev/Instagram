@@ -1,4 +1,10 @@
-import { View, Image, Text, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Image,
+  Text,
+  useWindowDimensions,
+  Pressable,
+} from 'react-native';
 import { Ionicons, Feather, AntDesign } from '@expo/vector-icons';
 
 import { Cloudinary } from '@cloudinary/url-gen';
@@ -10,8 +16,65 @@ import { focusOn } from '@cloudinary/url-gen/qualifiers/gravity';
 import { FocusOn } from '@cloudinary/url-gen/qualifiers/focusOn';
 import { cld } from '~/src/lib/cloudinary';
 import PostContent from './PostContent';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function PostListItem({ post }) {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeRecord, setLikeRecord] = useState(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchLike();
+  }, []);
+
+  useEffect(() => {
+    if (isLiked) {
+      saveLike();
+    } else {
+      deleteLike();
+    }
+  }, [isLiked]);
+
+  const fetchLike = async () => {
+    const { data, error } = await supabase
+      .from('likes')
+      .select('*')
+      .eq('user_id', user?.id)
+      .eq('post_id', post.id)
+      .select();
+
+    if (data && data?.length > 0) {
+      setLikeRecord(data[0]);
+      setIsLiked(true);
+    }
+  };
+
+  const saveLike = async () => {
+    if (likeRecord) {
+      return;
+    }
+    const { data } = await supabase
+      .from('likes')
+      .insert([{ user_id: user?.id, post_id: post.id }])
+      .select();
+
+    setLikeRecord(data[0]);
+  };
+
+  const deleteLike = async () => {
+    if (likeRecord) {
+      const { error } = await supabase
+        .from('likes')
+        .delete()
+        .eq('id', likeRecord.id);
+      if (!error) {
+        setLikeRecord(null);
+      }
+    }
+  };
+
   const avatar = cld.image(post.user.avatar_url || 'user_rubrec');
   avatar.resize(
     thumbnail().width(48).height(48).gravity(focusOn(FocusOn.face()))
@@ -35,7 +98,12 @@ export default function PostListItem({ post }) {
 
       {/* Icons */}
       <View className="flex-row gap-3 p-3">
-        <AntDesign name="hearto" size={20} />
+        <AntDesign
+          onPress={() => setIsLiked(!isLiked)}
+          name={isLiked ? 'heart' : 'hearto'}
+          size={20}
+          color={isLiked ? 'crimson' : 'black'}
+        />
         <Ionicons name="chatbubble-outline" size={20} />
         <Feather name="send" size={20} />
 
